@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
 
 // Cena, câmera e renderer
 const scene = new THREE.Scene();
@@ -80,7 +82,44 @@ loader.load('/models/nave-imperial.glb', (gltf) => {
     console.error('Erro ao carregar a nave:', error);
 });
 
-// Variáveis de animação
+
+//---------------- PORSCHE ----------------------
+let f1Car = null;
+const mtlLoader = new MTLLoader();
+mtlLoader.setPath('/models/');
+mtlLoader.load('911_GT3.mtl', (materials) => {
+  materials.preload();
+  const objLoader = new OBJLoader();
+  objLoader.setMaterials(materials);
+  objLoader.setPath('/models/');
+  objLoader.load('911_GT3.obj', (object) => {
+    object.scale.set(0.9, 0.9, 0.9);
+    object.rotation.y = -Math.PI / 2;
+
+    // Centralizar bounding box
+    const box = new THREE.Box3().setFromObject(object);
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    object.position.sub(center);
+
+    const carGroup = new THREE.Group();
+    object.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+
+    carGroup.add(object);
+    carGroup.visible = false;
+
+    f1Car = carGroup;
+    scene.add(f1Car);
+    console.log('Carro carregado e centralizado!');
+  });
+});
+
+// Animação
 let time = 0;
 let rotationSpeed = 0.003;
 let hoverSpeed = 0.01;
@@ -88,34 +127,37 @@ let hoverSpeed = 0.01;
 // Loop de animação
 function animate() {
   requestAnimationFrame(animate);
-  
-  time += 0.016; // ~60fps
-  
-  // Animação da nave
-  if (spaceship) {
-    // Rotação suave
+  time += 0.016;
+
+  if (spaceship?.visible) {
     spaceship.rotation.y += rotationSpeed;
     
     // Movimento de hover (sobe e desce)
     spaceship.position.y = Math.sin(time * hoverSpeed) * 0.5;
-    
-    // Movimento lateral suave
     spaceship.position.x = Math.cos(time * hoverSpeed * 0.7) * 0.3;
   }
-  
 
-  
-  // Animação das luzes coloridas
+  if (f1Car?.visible) {
+    f1Car.rotation.y += 0.002;
+  }
+
   blueLight.intensity = 0.3 + Math.sin(time * 0.5) * 0.2;
   redLight.intensity = 0.3 + Math.cos(time * 0.5) * 0.2;
 
-  
   controls.update();
   renderer.render(scene, camera);
 }
 
 animate();
 
+// Botões: alternar objetos
+window.mostrarNave = () => {
+  if (spaceship) spaceship.visible = true;
+  if (f1Car) f1Car.visible = false;
+};
 
-
+window.mostrarCarro = () => {
+  if (spaceship) spaceship.visible = false;
+  if (f1Car) f1Car.visible = true;
+};
 
