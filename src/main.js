@@ -30,7 +30,7 @@ scene.background = new THREE.Color(0x000011);
 const ambientLight = new THREE.AmbientLight(0x404040, 0.3);
 scene.add(ambientLight);
 
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 1.8);
 directionalLight.position.set(10, 10, 10);
 directionalLight.castShadow = true;
 scene.add(directionalLight);
@@ -85,38 +85,33 @@ loader.load('/models/nave-imperial.glb', (gltf) => {
 
 //---------------- PORSCHE ----------------------
 let f1Car = null;
-const mtlLoader = new MTLLoader();
-mtlLoader.setPath('/models/');
-mtlLoader.load('911_GT3.mtl', (materials) => {
-  materials.preload();
-  const objLoader = new OBJLoader();
-  objLoader.setMaterials(materials);
-  objLoader.setPath('/models/');
-  objLoader.load('911_GT3.obj', (object) => {
-    object.scale.set(0.9, 0.9, 0.9);
-    object.rotation.y = -Math.PI / 2;
+const gltfLoader = new GLTFLoader();
+gltfLoader.setPath('/models/');
+gltfLoader.load('tanque.glb', (gltf) => {
+  const object = gltf.scene;
+  object.scale.set(0.9, 0.9, 0.9);
+  object.rotation.y = -Math.PI / 2;
 
-    // Centralizar bounding box
-    const box = new THREE.Box3().setFromObject(object);
-    const center = new THREE.Vector3();
-    box.getCenter(center);
-    object.position.sub(center);
+  // Centralizar bounding box
+  const box = new THREE.Box3().setFromObject(object);
+  const center = new THREE.Vector3();
+  box.getCenter(center);
+  object.position.sub(center);
 
-    const carGroup = new THREE.Group();
-    object.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-      }
-    });
-
-    carGroup.add(object);
-    carGroup.visible = false;
-
-    f1Car = carGroup;
-    scene.add(f1Car);
-    console.log('Carro carregado e centralizado!');
+  const carGroup = new THREE.Group();
+  object.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
   });
+
+  carGroup.add(object);
+  carGroup.visible = false;
+
+  f1Car = carGroup;
+  scene.add(f1Car);
+  console.log('Carro .glb carregado e centralizado!');
 });
 
 // Animação
