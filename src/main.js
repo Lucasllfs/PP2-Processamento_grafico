@@ -105,7 +105,7 @@ loader.load('/models/nave-imperial.glb', (gltf) => {
 let satellite = null;
 const gltfLoader = new GLTFLoader();
 gltfLoader.setPath('/models/');
-gltfLoader.load('teste.glb', (gltf) => {
+gltfLoader.load('satellite.glb', (gltf) => {
   const object = gltf.scene;
   object.scale.set(9, 9, 9);
   object.rotation.y = -Math.PI / 2;
