@@ -8,6 +8,17 @@ import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
 // Cena, câmera e renderer
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const camera2 = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera2.position.set(20, 10, 10);
+let usarCamera2 = false;
+window.addEventListener('keydown', (e) => {
+  if (e.key.toLowerCase() === 'c') {
+    usarCamera2 = !usarCamera2;
+    controls.enabled = !usarCamera2;
+    controls2.enabled = usarCamera2;
+    console.log(`Câmera ativa: ${usarCamera2 ? 'Câmera 2 (satélite)' : 'Câmera 1 (nave)'}`);
+  }
+});
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
@@ -20,6 +31,12 @@ camera.position.set(0, 5, 10);
 // Controles
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
+controls.target.set(6, 0, 0);
+
+const controls2 = new OrbitControls(camera2, renderer.domElement);
+controls2.enableDamping = true;
+controls2.enabled = false;
+controls2.target.set(-5, 9, -15);
 
 // Fundo espacial
 scene.background = new THREE.Color(0x000011);
@@ -58,16 +75,17 @@ let spaceship = null;
 // Carregamento da nave
 loader.load('/models/nave-imperial.glb', (gltf) => {
   spaceship = gltf.scene;
-  
+
   // Redimensionar a nave
-  spaceship.scale.set(0.01, 0.01, 0.01); // Muito pequena, ajuste conforme necessário
-  
-  // Posicionar no centro
+  spaceship.scale.set(0.01, 0.01, 0.01);
+
+  // Posicionar 
   spaceship.position.set(0, 0, 0);
-  
+  // spaceship.position.set(-5, 9, -15); 
+
   // Rotação inicial
   spaceship.rotation.y = Math.PI / 4;
-  
+
   // Habilitar sombras
   spaceship.traverse((child) => {
     if (child.isMesh) {
@@ -75,30 +93,29 @@ loader.load('/models/nave-imperial.glb', (gltf) => {
       child.receiveShadow = true;
     }
   });
-  
+
   scene.add(spaceship);
   console.log('Nave carregada!');
 }, undefined, (error) => {
-    console.error('Erro ao carregar a nave:', error);
+  console.error('Erro ao carregar a nave:', error);
 });
 
+//---------------- satellite ----------------------
 
-//---------------- PORSCHE ----------------------
-let f1Car = null;
+let satellite = null;
 const gltfLoader = new GLTFLoader();
 gltfLoader.setPath('/models/');
-gltfLoader.load('tanque.glb', (gltf) => {
+gltfLoader.load('teste.glb', (gltf) => {
   const object = gltf.scene;
-  object.scale.set(0.9, 0.9, 0.9);
+  object.scale.set(9, 9, 9);
   object.rotation.y = -Math.PI / 2;
 
-  // Centralizar bounding box
   const box = new THREE.Box3().setFromObject(object);
   const center = new THREE.Vector3();
   box.getCenter(center);
   object.position.sub(center);
 
-  const carGroup = new THREE.Group();
+  const satelliteGroup = new THREE.Group();
   object.traverse((child) => {
     if (child.isMesh) {
       child.castShadow = true;
@@ -106,12 +123,47 @@ gltfLoader.load('tanque.glb', (gltf) => {
     }
   });
 
-  carGroup.add(object);
-  carGroup.visible = false;
+  satelliteGroup.add(object);
+  satelliteGroup.visible = true;
+  satelliteGroup.position.set(-5, 9, -15);
+  // satelliteGroup.position.set(0, 0, 0); 
 
-  f1Car = carGroup;
-  scene.add(f1Car);
-  console.log('Carro .glb carregado e centralizado!');
+  satellite = satelliteGroup;
+  scene.add(satellite);
+
+
+  camera2.lookAt(satellite.position);
+
+  // ---------------- SHADER DENTRO DO SATÉLITE ----------------
+  const vertexShader = `
+  precision mediump float;
+  attribute vec3 position;
+  uniform mat4 modelViewMatrix;
+  uniform mat4 projectionMatrix;
+  void main() {
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+  const fragmentShader = `
+  precision mediump float;
+  void main() {
+    gl_FragColor = vec4(0.4, 0.0, 0.0, 1.0); // vermelho escuro
+  }
+`;
+
+  const customMaterial = new THREE.RawShaderMaterial({
+    vertexShader,
+    fragmentShader,
+  });
+
+  const shaderGeometry = new THREE.TorusKnotGeometry(0.3, 0.1, 100, 16);
+  const shaderBox = new THREE.Mesh(shaderGeometry, customMaterial);
+
+  shaderBox.position.set(0, 1, 0);
+  satelliteGroup.add(shaderBox);
+
+  console.log('satellite .glb carregado e centralizado!');
 });
 
 // Animação
@@ -124,35 +176,25 @@ function animate() {
   requestAnimationFrame(animate);
   time += 0.016;
 
-  if (spaceship?.visible) {
+  if (spaceship) {
     spaceship.rotation.y += rotationSpeed;
-    
-    // Movimento de hover (sobe e desce)
     spaceship.position.y = Math.sin(time * hoverSpeed) * 0.5;
     spaceship.position.x = Math.cos(time * hoverSpeed * 0.7) * 0.3;
   }
 
-  if (f1Car?.visible) {
-    f1Car.rotation.y += 0.002;
+  if (satellite?.visible) {
+    satellite.rotation.y += 0.002;
+    satellite.rotation.x += 0.0015;
   }
 
   blueLight.intensity = 0.3 + Math.sin(time * 0.5) * 0.2;
   redLight.intensity = 0.3 + Math.cos(time * 0.5) * 0.2;
 
   controls.update();
-  renderer.render(scene, camera);
+  controls2.update();
+  // renderer.render(scene, camera);
+  renderer.render(scene, usarCamera2 ? camera2 : camera);
+
 }
 
 animate();
-
-// Botões: alternar objetos
-window.mostrarNave = () => {
-  if (spaceship) spaceship.visible = true;
-  if (f1Car) f1Car.visible = false;
-};
-
-window.mostrarCarro = () => {
-  if (spaceship) spaceship.visible = false;
-  if (f1Car) f1Car.visible = true;
-};
-
