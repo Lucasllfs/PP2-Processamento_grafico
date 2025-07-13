@@ -131,7 +131,6 @@ gltfLoader.load('satellite.glb', (gltf) => {
   satellite = satelliteGroup;
   scene.add(satellite);
 
-
   camera2.lookAt(satellite.position);
 
   // ---------------- SHADER DENTRO DO SATÉLITE ----------------
@@ -166,6 +165,31 @@ gltfLoader.load('satellite.glb', (gltf) => {
   console.log('satellite .glb carregado e centralizado!');
 });
 
+// ----------- LUA COM TEXTURA E ÓRBITA -----------
+  let luaGroup = null;
+  let lua = null;
+  let luaAngle = 0;
+  let luaSpeed = 0.01;
+
+  luaGroup = new THREE.Group(); // inicializa o grupo da lua
+
+  const luaTexture = new THREE.TextureLoader().load('/textures/lua.jpg');
+  const luaMaterial = new THREE.MeshStandardMaterial({ map: luaTexture });
+  const luaGeometry = new THREE.SphereGeometry(5, 32, 32);
+
+  lua = new THREE.Mesh(luaGeometry, luaMaterial); // atribui à variável externa
+
+  lua.castShadow = true;
+  lua.receiveShadow = true;
+
+  luaGroup.add(lua);
+  scene.add(luaGroup);
+
+  // Posicionamento inicial da lua e do grupo
+  lua.position.set(2, 0, 0);
+  luaGroup.position.set(15, 10, 0);
+
+
 // Animação
 let time = 0;
 let rotationSpeed = 0.003;
@@ -186,6 +210,13 @@ function animate() {
     satellite.rotation.y += 0.002;
     satellite.rotation.x += 0.0015;
   }
+
+  if (luaGroup && lua) {
+    luaAngle += luaSpeed;
+    lua.position.x = Math.cos(luaAngle) * -4;
+    lua.position.z = Math.sin(luaAngle) * -4;
+  }
+
 
   blueLight.intensity = 0.3 + Math.sin(time * 0.5) * 0.2;
   redLight.intensity = 0.3 + Math.cos(time * 0.5) * 0.2;
