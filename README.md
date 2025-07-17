@@ -19,6 +19,8 @@ Este projeto é uma cena 3D interativa desenvolvida com **Three.js**, que repres
 - **Animações**:
   - A nave gira e flutua suavemente com movimentos senoidais.
   - O satélite gira lentamente nos eixos Y e X.
+  - A lua faz rotação em volta de si mesma e em volta de um eixo.
+  - O planeta faz a rotação.
 - **Controle interativo da cena** via mouse (zoom, rotação e pan) nas duas câmeras.
 - **Fundo escuro espacial** (`0x000011`), simulando o vácuo do espaço.
 
