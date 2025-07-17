@@ -41,8 +41,6 @@ controls2.target.set(-5, 9, -15);
 // Fundo espacial
 scene.background = new THREE.Color(0x000011);
 
-
-
 // Luzes espaciais
 const ambientLight = new THREE.AmbientLight(0x404040, 0.3);
 scene.add(ambientLight);
@@ -52,17 +50,13 @@ directionalLight.position.set(10, 10, 10);
 directionalLight.castShadow = true;
 scene.add(directionalLight);
 
-// Luz azul do lado esquerdo (efeito espacial)
 const blueLight = new THREE.PointLight(0x0066ff, 0.5, 50);
 blueLight.position.set(-20, 5, 0);
 scene.add(blueLight);
 
-// Luz vermelha do lado direito
 const redLight = new THREE.PointLight(0xff0066, 0.5, 50);
 redLight.position.set(20, 5, 0);
 scene.add(redLight);
-
-
 
 // Carregador GLB/GLTF com suporte a DRACO
 const loader = new GLTFLoader();
@@ -72,21 +66,13 @@ loader.setDRACOLoader(dracoLoader);
 
 let spaceship = null;
 
-// Carregamento da nave
 loader.load('/models/nave-imperial.glb', (gltf) => {
   spaceship = gltf.scene;
 
-  // Redimensionar a nave
   spaceship.scale.set(0.01, 0.01, 0.01);
-
-  // Posicionar 
   spaceship.position.set(0, 0, 0);
-  // spaceship.position.set(-5, 9, -15); 
-
-  // Rotação inicial
   spaceship.rotation.y = Math.PI / 4;
 
-  // Habilitar sombras
   spaceship.traverse((child) => {
     if (child.isMesh) {
       child.castShadow = true;
@@ -101,7 +87,6 @@ loader.load('/models/nave-imperial.glb', (gltf) => {
 });
 
 //---------------- satellite ----------------------
-
 let satellite = null;
 const gltfLoader = new GLTFLoader();
 gltfLoader.setPath('/models/');
@@ -126,14 +111,11 @@ gltfLoader.load('satellite.glb', (gltf) => {
   satelliteGroup.add(object);
   satelliteGroup.visible = true;
   satelliteGroup.position.set(-5, 9, -15);
-  // satelliteGroup.position.set(0, 0, 0); 
-
   satellite = satelliteGroup;
   scene.add(satellite);
 
   camera2.lookAt(satellite.position);
 
-  // ---------------- SHADER DENTRO DO SATÉLITE ----------------
   const vertexShader = `
   precision mediump float;
   attribute vec3 position;
@@ -147,7 +129,7 @@ gltfLoader.load('satellite.glb', (gltf) => {
   const fragmentShader = `
   precision mediump float;
   void main() {
-    gl_FragColor = vec4(0.4, 0.0, 0.0, 1.0); // vermelho escuro
+    gl_FragColor = vec4(0.4, 0.0, 0.0, 1.0);
   }
 `;
 
@@ -165,37 +147,50 @@ gltfLoader.load('satellite.glb', (gltf) => {
   console.log('satellite .glb carregado e centralizado!');
 });
 
+// ----------- PLANETA -----------
+let planeta = null;
+
+const planetaTexture = new THREE.TextureLoader().load('/textures/planeta.jpeg');
+const planetaMaterial = new THREE.MeshStandardMaterial({ map: planetaTexture });
+const planetaGeometry = new THREE.SphereGeometry(8, 64, 64);
+
+planeta = new THREE.Mesh(planetaGeometry, planetaMaterial);
+
+planeta.castShadow = true;
+planeta.receiveShadow = true;
+
+planeta.position.set(-30, 5, -20);
+
+scene.add(planeta);
+
 // ----------- LUA COM TEXTURA E ÓRBITA -----------
-  let luaGroup = null;
-  let lua = null;
-  let luaAngle = 0;
-  let luaSpeed = 0.01;
+let luaGroup = null;
+let lua = null;
+let luaAngle = 0;
+let luaSpeed = 0.01;
 
-  luaGroup = new THREE.Group(); // inicializa o grupo da lua
+luaGroup = new THREE.Group();
 
-  const luaTexture = new THREE.TextureLoader().load('/textures/lua.jpg');
-  const luaMaterial = new THREE.MeshStandardMaterial({ map: luaTexture });
-  const luaGeometry = new THREE.SphereGeometry(5, 32, 32);
+const luaTexture = new THREE.TextureLoader().load('/textures/lua.jpg');
+const luaMaterial = new THREE.MeshStandardMaterial({ map: luaTexture });
+const luaGeometry = new THREE.SphereGeometry(5, 32, 32);
 
-  lua = new THREE.Mesh(luaGeometry, luaMaterial); // atribui à variável externa
+lua = new THREE.Mesh(luaGeometry, luaMaterial);
 
-  lua.castShadow = true;
-  lua.receiveShadow = true;
+lua.castShadow = true;
+lua.receiveShadow = true;
 
-  luaGroup.add(lua);
-  scene.add(luaGroup);
+luaGroup.add(lua);
+scene.add(luaGroup);
 
-  // Posicionamento inicial da lua e do grupo
-  lua.position.set(2, 0, 0);
-  luaGroup.position.set(15, 10, 0);
-
+lua.position.set(2, 0, 0);
+luaGroup.position.set(15, 10, 0);
 
 // Animação
 let time = 0;
 let rotationSpeed = 0.003;
 let hoverSpeed = 0.01;
 
-// Loop de animação
 function animate() {
   requestAnimationFrame(animate);
   time += 0.016;
@@ -217,15 +212,17 @@ function animate() {
     lua.position.z = Math.sin(luaAngle) * -4;
   }
 
+  if (planeta) {
+    planeta.rotation.y += 0.001;
+  }
 
   blueLight.intensity = 0.3 + Math.sin(time * 0.5) * 0.2;
   redLight.intensity = 0.3 + Math.cos(time * 0.5) * 0.2;
 
   controls.update();
   controls2.update();
-  // renderer.render(scene, camera);
   renderer.render(scene, usarCamera2 ? camera2 : camera);
-
 }
 
 animate();
+
